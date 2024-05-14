@@ -1,0 +1,24 @@
+input RocketInput {
+    name: String!
+    description: String!
+    active: Boolean!
+    stages: Int!
+    boosters: Int!
+    costPerLaunch: Int!
+    successRatePct: Int!
+    firstFlight: String!
+    country: String!
+    height: RocketDimensionInput!
+    diameter: RocketDimensionInput!
+    mass: RocketMassInput!
+}
+
+input RocketDimensionInput {
+    meters: Float!
+    feet: Float!
+}
+
+input RocketMassInput {
+    kg: Int!
+    lb: Int!
+}

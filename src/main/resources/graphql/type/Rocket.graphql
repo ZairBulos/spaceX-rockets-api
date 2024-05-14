@@ -1,0 +1,25 @@
+type Rocket {
+    id: ID!
+    name: String!
+    description: String!
+    active: Boolean!
+    stages: Int!
+    boosters: Int!
+    costPerLaunch: Int!
+    successRatePct: Int!
+    firstFlight: String!
+    country: String!
+    height: RocketDimension!
+    diameter: RocketDimension!
+    mass: RocketMass!
+}
+
+type RocketDimension {
+    meters: Float!
+    feet: Float!
+}
+
+type RocketMass {
+    kg: Int!
+    lb: Int!
+}
