@@ -1,4 +1,0 @@
-type Query {
-    getAllRockets: [Rocket!]!
-    getRocketById(id: ID!): Rocket!
-}
