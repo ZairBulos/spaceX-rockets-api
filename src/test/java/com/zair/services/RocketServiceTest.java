@@ -3,6 +3,9 @@ package com.zair.services;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.zair.exceptions.RocketCreationException;
+import com.zair.exceptions.RocketNotFoundException;
+import com.zair.exceptions.RocketUpdateException;
 import com.zair.mappers.RocketMapper;
 import com.zair.models.dtos.RocketDTO;
 import com.zair.models.dtos.RocketDimensionDTO;
@@ -19,6 +22,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -89,6 +93,19 @@ public class RocketServiceTest {
     }
 
     @Test
+    public void testFindById_NotFound() {
+        // Arrange
+        Long rocketId = 1L;
+
+        when(rocketRepositoryMock.findById(rocketId)).thenReturn(Optional.empty());
+
+        // Act and Assert
+        assertThrows(RocketNotFoundException.class, () -> {
+            rocketService.findById(rocketId);
+        });
+    }
+
+    @Test
     public void testSave() {
         // Arrange
         RocketInputDTO rocketInput = RocketInputDTO.builder()
@@ -149,6 +166,48 @@ public class RocketServiceTest {
 
         // Assert
         assertEquals(rocketDTO, result);
+    }
+
+    @Test
+    public void testSave_DataIntegrityViolation() {
+        // Arrange
+        RocketInputDTO rocketInput = RocketInputDTO.builder()
+                .name("Falcon 9")
+                .description("Falcon 9 is a reusable, two-stage rocket designed and manufactured by SpaceX.")
+                .active(true)
+                .stages(2)
+                .boosters(0)
+                .costPerLaunch(50000000L)
+                .successRatePct(97)
+                .firstFlight(LocalDate.of(2010, 6, 4))
+                .country("United States")
+                .height(RocketDimensionDTO.builder().meters(70.0).feet(229.6).build())
+                .diameter(RocketDimensionDTO.builder().meters(3.7).feet(12.0).build())
+                .mass(RocketMassDTO.builder().kg(549054L).lb(1207920L).build())
+                .build();
+
+        Rocket rocket = Rocket.builder()
+                .name("Falcon 9")
+                .description("Falcon 9 is a reusable, two-stage rocket designed and manufactured by SpaceX.")
+                .active(true)
+                .stages(2)
+                .boosters(0)
+                .costPerLaunch(50000000L)
+                .successRatePct(97)
+                .firstFlight(LocalDate.of(2010, 6, 4))
+                .country("United States")
+                .build();
+        rocket.setHeight(RocketHeight.builder().meters(70.0).feet(229.6).rocket(rocket).build());
+        rocket.setDiameter(RocketDiameter.builder().meters(3.7).feet(12.0).rocket(rocket).build());
+        rocket.setMass(RocketMass.builder().kg(549054L).lb(1207920L).rocket(rocket).build());
+
+        when(rocketMapperMock.toEntity(rocketInput)).thenReturn(rocket);
+        when(rocketRepositoryMock.save(rocket)).thenThrow(new DataIntegrityViolationException("Unique constraint violation"));
+
+        // Act and Assert
+        assertThrows(RocketCreationException.class, () -> {
+            rocketService.save(rocketInput);
+        });
     }
 
     @Test
@@ -230,10 +289,80 @@ public class RocketServiceTest {
     }
 
     @Test
+    public void testUpdate_DataIntegrityViolation() {
+        Long rocketId = 1L;
+        RocketInputDTO rocketInput = RocketInputDTO.builder()
+                .name(null)
+                .description("Falcon Heavy is a partially reusable heavy-lift launch vehicle designed and manufactured by SpaceX.")
+                .active(true)
+                .stages(2)
+                .boosters(2)
+                .costPerLaunch(90000000L)
+                .successRatePct(100)
+                .firstFlight(LocalDate.of(2018, 2, 6))
+                .country("United States")
+                .height(RocketDimensionDTO.builder().meters(70.0).feet(229.6).build())
+                .diameter(RocketDimensionDTO.builder().meters(3.7).feet(12.0).build())
+                .mass(RocketMassDTO.builder().kg(1420788L).lb(3125735L).build())
+                .build();
+
+        Rocket rocket = Rocket.builder()
+                .id(rocketId)
+                .name("Falcon 9")
+                .description("Falcon 9 is a reusable, two-stage rocket designed and manufactured by SpaceX.")
+                .active(true)
+                .stages(2)
+                .boosters(0)
+                .costPerLaunch(50000000L)
+                .successRatePct(97)
+                .firstFlight(LocalDate.of(2010, 6, 4))
+                .country("United States")
+                .build();
+        rocket.setHeight(RocketHeight.builder().meters(70.0).feet(229.6).rocket(rocket).build());
+        rocket.setDiameter(RocketDiameter.builder().meters(3.7).feet(12.0).rocket(rocket).build());
+        rocket.setMass(RocketMass.builder().kg(549054L).lb(1207920L).rocket(rocket).build());
+
+        when(rocketRepositoryMock.findById(rocketId)).thenReturn(Optional.of(rocket));
+        when(rocketRepositoryMock.save(rocket)).thenThrow(new DataIntegrityViolationException("Cannot insert NULL into column 'name'"));
+
+        assertThrows(RocketUpdateException.class, () -> {
+            rocketService.update(rocketId, rocketInput);
+        });
+    }
+
+    @Test
+    public void testUpdate_NotFound() {
+        // Arrange
+        Long rocketId = 1L;
+        RocketInputDTO rocketInput = RocketInputDTO.builder()
+                .name("Falcon Heavy")
+                .description("Falcon Heavy is a partially reusable heavy-lift launch vehicle designed and manufactured by SpaceX.")
+                .active(true)
+                .stages(2)
+                .boosters(2)
+                .costPerLaunch(90000000L)
+                .successRatePct(100)
+                .firstFlight(LocalDate.of(2018, 2, 6))
+                .country("United States")
+                .height(RocketDimensionDTO.builder().meters(70.0).feet(229.6).build())
+                .diameter(RocketDimensionDTO.builder().meters(3.7).feet(12.0).build())
+                .mass(RocketMassDTO.builder().kg(1420788L).lb(3125735L).build())
+                .build();
+
+        when(rocketRepositoryMock.findById(rocketId)).thenReturn(Optional.empty());
+
+        // Act and Assert
+        assertThrows(RocketNotFoundException.class, () -> {
+            rocketService.update(rocketId, rocketInput);
+        });
+    }
+
+    @Test
     public void testDelete() {
         // Arrange
         Long rocketId = 1L;
-        doNothing().when(rocketRepositoryMock).deleteById(rocketId);
+
+        when(rocketRepositoryMock.existsById(rocketId)).thenReturn(true);
 
         // Act
         Boolean result = rocketService.delete(rocketId);
@@ -241,5 +370,18 @@ public class RocketServiceTest {
         // Assert
         assertTrue(result);
         verify(rocketRepositoryMock, times(1)).deleteById(rocketId);
+    }
+
+    @Test
+    public void testDelete_NotFound() {
+        // Arrange
+        Long rocketId = 1L;
+
+        when(rocketRepositoryMock.existsById(rocketId)).thenReturn(false);
+
+        // Act and Assert
+        assertThrows(RocketNotFoundException.class, () -> {
+            rocketService.delete(rocketId);
+        });
     }
 }

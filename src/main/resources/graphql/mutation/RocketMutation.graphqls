@@ -1,5 +1,5 @@
 type Mutation {
     createRocket(rocketInput: RocketInput!) : Rocket
     updateRocket(id: ID!, rocketInput: RocketInput!) : Rocket
-    deleteRocket(id: ID!) : Boolean!
+    deleteRocket(id: ID!) : Boolean
 }
