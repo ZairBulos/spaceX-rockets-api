@@ -13,6 +13,7 @@ import com.zair.models.entities.RocketMass;
 import com.zair.repositories.RocketRepository;
 import com.zair.services.RocketService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,12 +28,14 @@ public class RocketServiceImpl implements RocketService {
     private final RocketMapper rocketMapper;
 
     @Override
+    @Cacheable("rockets")
     public List<RocketDTO> findAll() {
         List<Rocket> rockets = rocketRepository.findAll();
         return rocketMapper.toDTOsList(rockets);
     }
 
     @Override
+    @Cacheable(value = "rocket", key = "#id")
     public RocketDTO findById(Long id) {
         Rocket rocket = rocketRepository.findById(id)
                 .orElseThrow(() -> new RocketNotFoundException("Rocket not found with id: " + id));
